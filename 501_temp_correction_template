@@ -1,0 +1,45 @@
+#include "Arduino_BHY2Host.h" // Connects to the microcontroller
+
+// Selects the appropriate sensor (in this case temperature)
+Sensor temperature(SENSOR_ID_TEMP);
+
+// Calibration constants (both set to 0 to test the functionality)
+const float c = 0.0;   // offset in °C
+const float k = 0.0;  // drift per second
+
+unsigned long startMillis;
+float temperatureValue = 0; // variable storing the measured temperature; defined as 0 as measurements will be added to that value
+
+void setup() {
+  Serial.begin(115200);
+  BHY2Host.begin();
+  temperature.begin();
+
+  startMillis = millis();  // start timer
+}
+
+void loop() {
+  BHY2Host.update();
+
+  temperatureValue = temperature.value(); // read temperature off the sensor
+
+  float timeSec = (millis() - startMillis) / 1000.0; // convert time to seconds
+
+  // Temperature correction application
+  float correctedTemp = temperatureValue - (c + k * timeSec);
+
+  // Print all of the values
+  Serial.print("Time: ");
+  Serial.print(timeSec);
+  Serial.print(" s   ||   ");
+
+  Serial.print("Measured: ");
+  Serial.print(temperatureValue);
+  Serial.println(" °C   ||   ");
+
+  Serial.print("Corrected: ");
+  Serial.print(correctedTemp);
+  Serial.println(" °C");
+
+  delay(1000);
+}
