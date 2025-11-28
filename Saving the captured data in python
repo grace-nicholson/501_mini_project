@@ -1,0 +1,111 @@
+# pip install pyserial
+##########################################################################################################
+#FOR THE CODE TO WORK, MAKE SURE THAT SERIAL MONITOR ON ARDUINO IS NOT OPEN WHILST THE CODE IS RUNNING !!!
+##########################################################################################################
+
+import serial # loads the pyserial library
+import serial.tools.list_ports # loads an extra part of pyserial that can scan all available COM ports
+import json # loads built in json decoder/encoder
+import csv # loads the csv writer
+import time
+
+# List the COM ports, and the devices that are connected to them
+ports = serial.tools.list_ports.comports() # lists all the currently avaiable serial (COM) ports
+
+# Loop prints them all out
+for n in ports:
+    print(n.device, n.description)
+
+dev = 'COM4' # stores the port name you want to connect to
+
+# The user can choose the type of the output file
+print("Do you want to save the data as CSV, JSON, or BOTH?")
+print("Type 'csv', 'json', or 'both'")
+save_type = input("Your choice: ").strip().lower()
+
+# Open the connection to your Arduino (baudrate is matched to the baudrate in arduino serial monitor)
+mkr = serial.Serial(port=dev, baudrate=115200, timeout=1) 
+
+n_bits = 100   # Number of bits to read
+
+################################################################################################################
+# Clear the buffer for the Nicla serial port - you may find the lines below are essential to get things working
+# You may find you have to comment / uncomment them - you may find they do nothing at all!
+#mkr.flush()
+#mkr.reset_input_buffer()
+#mkr.reset_output_buffer()
+################################################################################################################
+
+# Prepare output files depending on user choice
+json_enabled = (save_type == "json" or save_type == "both")
+csv_enabled  = (save_type == "csv"  or save_type == "both")
+
+if json_enabled:
+    json_file = open("temp_corr_arduino.json", "w")
+    json_file.write("[\n")  # start JSON list
+    first_json = True
+
+if csv_enabled:
+    csv_file = open("temp_corr_arduino.csv", "w", newline="")
+    writer = csv.writer(csv_file)
+    writer.writerow(["time_s", "temp_measured", "temp_corrected"])  # UPDATED CSV HEADER
+
+if not json_enabled and not csv_enabled:
+    print("You did not choose a correct file type.")
+    print("Please run again and type either csv, json, or both.")
+    exit()
+
+print("Reading data. Press CTRL+C to stop and save.") #CTRL+C raises KeyboardInterrupt in python, which will later close the infinite loop and allow for the data to be saved
+print("")
+
+# Loop to read off the data
+try:
+    while True:
+        data_stream = mkr.read(n_bits)    # Read n_bits bits of data (in this case 100)
+
+        # Convert raw byte data to a string so it can be saved
+        try:
+            data_string = data_stream.decode("utf-8", errors="ignore")
+        except:
+            data_string = str(data_stream)
+
+        # split into separate lines in case multiple Arduino prints were produced
+        lines = data_string.strip().split("\n")
+
+        for line in lines:
+            # Tries reading a JSON object from Arduino output
+            try:
+                obj = json.loads(line)
+            except:
+                continue  # skips invalid lines
+
+            # Prints the data stream
+            print(obj)
+
+            # Save JSON
+            if json_enabled:
+                if not first_json:
+                    json_file.write(",\n")
+                json.dump(obj, json_file, indent=4)
+                first_json = False
+
+            # Save CSV (using updated header names)
+            if csv_enabled:
+                writer.writerow([obj["time_s"], obj["measured"], obj["corrected"]])
+
+        time.sleep(0.1)  # pause prevents a CPU overload
+
+#  Makes sure that the program stops running 
+except KeyboardInterrupt:
+    print("\nStopping data collection.")
+
+finally:
+    if json_enabled:
+        json_file.write("\n]")
+        json_file.close()
+
+    if csv_enabled:
+        csv_file.close()
+
+    mkr.close() # closes the serial connection
+    print("Files were saved succesfully and serial connection was closed.")
