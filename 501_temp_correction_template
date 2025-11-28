@@ -28,18 +28,14 @@ void loop() {
   // Temperature correction application
   float correctedTemp = temperatureValue - (c + k * timeSec);
 
-  // Print all of the values
-  Serial.print("Time: ");
+  // JSON friendly output
+  Serial.print("{\"time_s\": ");
   Serial.print(timeSec);
-  Serial.print(" s   ||   ");
-
-  Serial.print("Measured: ");
+  Serial.print(", \"measured\": ");
   Serial.print(temperatureValue);
-  Serial.println(" °C   ||   ");
-
-  Serial.print("Corrected: ");
+  Serial.print(", \"corrected\": ");
   Serial.print(correctedTemp);
-  Serial.println(" °C");
+  Serial.println("}");
 
   delay(1000);
 }
