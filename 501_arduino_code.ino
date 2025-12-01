@@ -2,29 +2,38 @@
 #include <WiFiNINA.h>
 #include "Arduino_BHY2Host.h"
 
+// sensors collecting data
 Sensor temp(SENSOR_ID_TEMP);
 Sensor humid(SENSOR_ID_HUM);
 SensorBSEC bsec(SENSOR_ID_BSEC);
 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = "XXX";        // your network SSID (name)
-char pass[] = "XXX";    // your network password (use for WPA, or use as key for WEP)
+char ssid[] = "Glide_Resident";        // your network SSID (name)
+char pass[] = "SiloShelfHuman";    // your network password (use for WPA, or use as key for WEP)
 
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 
-const char broker[] = "pf-uyp85ksb0tbt7jocc1qo.cedalo.cloud";
+const char broker[] = "test.mosquitto.org";
 int        port     = 1883;
-const char topic1[] = "joetopic1";
-const char topic2[] = "joetopic2";
-const char topic3[] = "joetopic3";
+const char topic1[] = "time";
+const char topic2[] = "temp";
+const char topic3[] = "air_quality";
+const char topic4[] = "humidity";
 
 
 //set interval for sending messages (milliseconds)
-const long interval = 5000;
+const long interval = 30000;
 unsigned long previousMillis = 0;
 
 int count = 0;
+
+// Calibration constants (both set to 0 to test the functionality)
+//const float c = 0.0;   // offset in °C
+//const float k = 0.0;  // drift per second
+
+unsigned long startMillis;
+//float temperatureValue = 0; // variable storing the measured temperature; defined as 0 as measurements will be added to that value
 
 void setup() {
 
@@ -66,43 +75,50 @@ void loop() {
   // call poll() regularly to allow the library to send MQTT keep alive which
   // avoids being disconnected by the broker
   mqttClient.poll();
-  //BHY2Host.update();
 
 
   static auto printTime = millis();
   BHY2Host.update();
 
-  if (millis() - printTime >= 30000) {
+  if (millis() - printTime >= interval) {
     // save the last time a message was sent
     printTime = millis();
 
-    //record random value from A0, A1 and A2
-    //float Rvalue1 = temp.value();
-    //float Rvalue2 = humid.value();
-   // float Rvalue3 = bsec.value();
+  
+
+// Temperature correction application
+  
 
     Serial.print("Sending message to topic1: ");
     Serial.println(topic1);
-    Serial.println(temp.value());
+    Serial.println(printTime/1000);
 
     Serial.print("Sending message to topic2: ");
     Serial.println(topic2);
-    Serial.println(bsec.toString());
+    Serial.println(temp.value());
 
-    Serial.print("sending message to topic3: ");
+    Serial.print("Sending message to topic3: ");
     Serial.println(topic3);
+    Serial.println(bsec.iaq());
+
+    Serial.print("sending message to topic4: ");
+    Serial.println(topic4);
     Serial.println(humid.value());
 
     // send message, the Print interface can be used to set the message contents
     mqttClient.beginMessage(topic1);
-    mqttClient.print(temp.value());
+    mqttClient.print(printTime/1000);
     mqttClient.endMessage();
 
     mqttClient.beginMessage(topic2);
-    mqttClient.print(bsec.toString());
+    mqttClient.print(temp.value());
     mqttClient.endMessage();
 
-   mqttClient.beginMessage(topic3);
+    mqttClient.beginMessage(topic3);
+    mqttClient.print(bsec.iaq());
+    mqttClient.endMessage();
+
+   mqttClient.beginMessage(topic4);
    mqttClient.print(humid.value());
    mqttClient.endMessage();
     
