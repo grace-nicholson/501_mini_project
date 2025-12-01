@@ -7,7 +7,8 @@ import serial # loads the pyserial library
 import serial.tools.list_ports # loads an extra part of pyserial that can scan all available COM ports
 import json # loads built in json decoder/encoder
 import csv # loads the csv writer
-import time
+import time # allows for time to be reocrded in metadata
+from datetime import datetime  # allows for date to be stored in metadata
 
 # List the COM ports, and the devices that are connected to them
 ports = serial.tools.list_ports.comports() # lists all the currently avaiable serial (COM) ports
@@ -82,14 +83,25 @@ try:
             # Prints the data stream
             print(obj)
 
+            # Metadata is being added to the json file
+            now = datetime.now()
+            obj_with_metadata = {
+                "metadata": {
+                    "timestamp": now.isoformat(),
+                    "date": now.strftime("%Y-%m-%d"),
+                    "time": now.strftime("%H:%M:%S")
+                },
+                "data": obj
+            }
+
             # Save JSON
             if json_enabled:
                 if not first_json:
                     json_file.write(",\n")
-                json.dump(obj, json_file, indent=4)
+                json.dump(obj_with_metadata, json_file, indent=4)
                 first_json = False
 
-            # Save CSV (using updated header names)
+            # Save CSV
             if csv_enabled:
                 writer.writerow([obj["time_s"], obj["measured"], obj["corrected"]])
 
