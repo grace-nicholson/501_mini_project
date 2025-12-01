@@ -4,8 +4,8 @@
 Sensor temperature(SENSOR_ID_TEMP);
 
 // Calibration constants (both set to 0 to test the functionality)
-const float c = 0.0;   // offset in °C
-const float k = 0.0;  // drift per second
+const float c = 2.69915491730803;   // offset in °C
+const float k = 0.000786343265870651;  // drift per second
 
 unsigned long startMillis;
 float temperatureValue = 0; // variable storing the measured temperature; defined as 0 as measurements will be added to that value
