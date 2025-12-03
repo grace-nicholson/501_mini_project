@@ -31,6 +31,8 @@ def get_weather_metadata():
             "humidity": data["main"]["humidity"],
             "pressure_hPa": data["main"]["pressure"],
             "wind_speed_mps": data["wind"]["speed"],
+            "experimental_condition": "xxx",
+            "influencing_factors": "xxx",
         }
     except Exception as e:
         return {
