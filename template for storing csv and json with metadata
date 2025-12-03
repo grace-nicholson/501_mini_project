@@ -1,160 +1,120 @@
-# ALL OF THE IMPORTS USED
+import paho.mqtt.subscribe as subscribe
+import csv
+import json
+import os
+import pandas as pd
+import requests
+from datetime import datetime
 
-import serial # loads the pyserial library
-import serial.tools.list_ports # loads an extra part of pyserial that can scan all available COM ports
-import json # loads built in json decoder/encoder
-import csv # loads the csv writer
-import time
+# -----------------------
+# WEATHER API SETTINGS
+# -----------------------
+API_KEY = "0a0ba7148e06306a27c69077fca22913"   # Replace with your valid OpenWeatherMap API key
+CITY = "Liverpool,GB" # Replace with your location
 
-#------------------------------------------------------------------------------------------------
-# WEATHER METADATA
-#------------------------------------------------------------------------------------------------
-
-import requests  # Fetches weather API requests
-from datetime import datetime  # Fetches time-stamps
-
-# Weather measurement implementation
-API_KEY = "0a0ba7148e06306a27c69077fca22913" # Make sure to input your API KEY
-CITY = "Liverpool,GB" # Make sure to input your location
-
-# Request live weather data from OpenWeatherMap 
 def get_weather_metadata():
     try:
         url = (
             f"https://api.openweathermap.org/data/2.5/weather?"
             f"q={CITY}&appid={API_KEY}&units=metric"
         )
-        response = requests.get(url)
-        data = response.json()
+        r = requests.get(url)
+        data = r.json()
 
-        # Extracts weather parameters
-        weather_info = {
+        # Outputs weather parameters
+        return {
             "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "weather_api_source": "OpenWeatherMap",
             "location": CITY,
-            "conditions": data.get("weather", [{}])[0].get("description"),
-            "temperature_outside": data.get("main", {}).get("temp"),
-            "humidity": data.get("main", {}).get("humidity"),
-            "pressure_hPa": data.get("main", {}).get("pressure"),
-            "wind_speed_mps": data.get("wind", {}).get("speed")
+            "conditions": data["weather"][0]["description"],
+            "temperature_outside": data["main"]["temp"],
+            "humidity": data["main"]["humidity"],
+            "pressure_hPa": data["main"]["pressure"],
+            "wind_speed_mps": data["wind"]["speed"],
         }
-
-        return weather_info
-    
-# Ensures that in case weather data is not fetched correctly, the other metadata can still be saved
     except Exception as e:
         return {
             "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "weather_api_source": "OpenWeatherMap",
             "location": CITY,
-            "error": f"Weather API request failed: {e}"
+            "error": f"Weather API failed: {e}"
         }
 
-# Request weather data at the beginning
+# Fetch weather metadata ONCE
 weather_metadata = get_weather_metadata()
 
-#----------------------------------------------------------------------------------------------------------------
-#Connecting to microprocessor
-#----------------------------------------------------------------------------------------------------------------
+# Raw MQTT topics
+topics = ['time', 'temp', 'air_quality', 'humidity']
 
-# List the COM ports, and the devices that are connected to them
-ports = serial.tools.list_ports.comports()
+# Friendly column labels
+labels = ['time', 'temp', 'air quality', 'humidity']
 
-# Loop prints them all out
-for n in ports:
-    print(n.device, n.description)
+n = 6  # number of cycles
 
-dev = 'COM4' # stores the port name you want to connect to
+csv_file = "mqtt_data_test.csv"
+json_file = "mqtt_data_test.json"
 
-# The user can choose the type of the output file
-print("Do you want to save the data as CSV, JSON, or BOTH?")
-print("Type 'csv', 'json', or 'both'")
-save_type = input("Your choice: ").strip().lower()
+# -----------------------
+# SET UP CSV
+# -----------------------
+write_csv_header = not os.path.exists(csv_file)
+csv_fh = open(csv_file, "a", newline="")
+csv_writer = csv.writer(csv_fh)
 
-# Open the connection to your Arduino (baudrate is matched to the baudrate in arduino serial monitor)
-mkr = serial.Serial(port=dev, baudrate=115200, timeout=1)
+if write_csv_header:
+    csv_writer.writerow(["cycles"] + labels)
 
-n_bits = 100   # Number of bits to read
+# -----------------------
+# SET UP JSON
+# -----------------------
+json_write_header = not os.path.exists(json_file)
+json_fh = open(json_file, "a")
 
-# Arduino might need flushing if it does not fetch data correctly(uncomment the following if code doesnt work:)-
-#mkr.flush()
-#mkr.reset_input_buffer()
-#mkr.reset_output_buffer()
-#---------------------------------------------------------------------------------------------------------------
+# If brand new file → write metadata first
+if json_write_header:
+    json_fh.write(json.dumps({"metadata": weather_metadata}, indent=4) + "\n")
 
-json_enabled = (save_type == "json" or save_type == "both")
-csv_enabled  = (save_type == "csv"  or save_type == "both")
+# -----------------------
+# STORAGE FOR FINAL TABLE
+# -----------------------
+table_rows = []
 
-# JSON output
-if json_enabled:
-    json_file = open("results.json", "w") # SET THE NAME OF THE JSON FILE
-    json_file.write("[\n")  # start JSON list
+# -----------------------
+# MAIN LOOP
+# -----------------------
+for i in range(n):
+    # Read MQTT messages
+    m = subscribe.simple(
+        topics,
+        hostname="test.mosquitto.org",
+        retained=False,
+        msg_count=len(topics)
+    )
 
-    # First entry in JSON is the metadata
-    json.dump({"metadata": weather_metadata}, json_file, indent=4)
-    json_file.write(",\n")
+    values = [msg.payload.decode("utf-8") for msg in m]
 
+    # Store for DataFrame
+    row_dict = {"cycle": i}
+    for label, value in zip(labels, values):
+        row_dict[label] = value
+    table_rows.append(row_dict)
 
-# CSV output
-if csv_enabled:
-    csv_file = open("results.csv", "w", newline="") # SET THE NAME OF THE CSV FILE
-    writer = csv.writer(csv_file)
-    writer.writerow(["column1", "column2", "column3"]) # NAME THE CSV COLUMNS
+    # Write CSV
+    csv_writer.writerow([i] + values)
 
-if not json_enabled and not csv_enabled:
-    print("You did not choose a correct file type.")
-    print("Please run again and type either csv, json, or both.")
-    exit()
+    # Write JSON (one object per line)
+    json_fh.write(json.dumps(row_dict) + "\n")
 
-print("Reading data. Press CTRL+C to stop and save.")
-print("")
+# Close files
+csv_fh.close()
+json_fh.close()
 
-#------------------------------------------------------------------------------------------------------------------------------------
-#################################################### READING DATA OFF OF ARDUINO ####################################################
-#------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------
+# BUILD DATAFRAME
+# -----------------------
+df = pd.DataFrame(table_rows)
 
-try:
-    while True:
-        data_stream = mkr.read(n_bits)
-
-        try:
-            data_string = data_stream.decode("utf-8", errors="ignore")
-        except:
-            data_string = str(data_stream)
-
-        lines = data_string.strip().split("\n")
-
-        for line in lines:
-            try:
-                obj = json.loads(line)
-            except:
-                continue
-
-            print(obj)
-
-            # Save JSON
-            if json_enabled:
-                json.dump(obj, json_file, indent=4)
-                json_file.write(",\n")
-
-            # Save CSV
-            if csv_enabled:
-                writer.writerow([obj["column1"], obj["column2"], obj["column3"]]) # REMEMBER TO NAME THE COLUMNS
-
-        time.sleep(0.1)
-
-except KeyboardInterrupt:
-    print("\nStopping data collection.")
-
-finally:
-    # Clean JSON formatting
-    if json_enabled:
-        json_file.seek(json_file.tell() - 2)  # remove last comma
-        json_file.write("\n]")
-        json_file.close()
-
-    if csv_enabled:
-        csv_file.close()
-
-    mkr.close()
-    print("Files were saved successfully and serial conne
+# -----------------------
+# DISPLAY DATAFRAME
+# -----------------------
+df
