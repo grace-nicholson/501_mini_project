@@ -1,0 +1,33 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Code asks for the user input
+T_real = input("Enter T(real) values (comma-separated): ")
+T_arduino = input("Enter T(Arduino) values (comma-separated): ")
+
+# Convert into arrays of floats
+T_real = np.array([float(x.strip()) for x in T_real.split(",")])
+T_arduino = np.array([float(x.strip()) for x in T_arduino.split(",")])
+
+
+# x = Arduino T, y = Real T
+m, b = np.polyfit(T_arduino, T_real, 1)
+trendline = m * T_arduino + b
+
+# Plotting the graph
+plt.figure(figsize=(8,6))
+
+plt.scatter(T_arduino, T_real, label="Data Points")
+
+plt.plot(T_arduino, trendline, linewidth=2,
+         label=f"Trendline: y = {m:.3f}x + {b:.3f}")
+
+# Adjusting the labels
+plt.xlabel("T(Arduino) (°C)", fontsize=14, fontweight='bold')
+plt.ylabel("T(real) (°C)", fontsize=14, fontweight='bold')
+plt.title("Relationship between real and Arduino temperature", fontsize=14, fontweight='bold')
+
+plt.grid(True) # prints out a grid for the ease of use
+plt.legend() # prints out a legend
+
+plt.show()
