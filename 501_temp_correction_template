@@ -3,7 +3,7 @@
 // Selects the appropriate sensor (in this case temperature)
 Sensor temperature(SENSOR_ID_TEMP);
 
-// Calibration constants (both set to 0 to test the functionality)
+// Calibration constants (both set to 0 to test the functionality - CHANGE TO YOUR DETERMINED VALUES)
 const float c = 0.0;   // offset in °C
 const float k = 0.0;  // drift per second
 
