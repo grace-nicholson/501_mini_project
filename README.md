@@ -36,3 +36,19 @@ This project is intended for students as an example of how sensors and microcont
 1. Install the Arduino IDE and required board libraries.
 2. Install Python dependencies listed in `Requirements`.
 3. Configure WiFi credentials, API keys and file-paths where required.
+
+
+## Authors
+
+- Grace Nicholson 
+  MSc in Digital Chemistry student, University of Liverpool
+  GitHub: https://github.com/grace-nicholson
+
+- Franciszek Daniewski 
+  MSc in Digital Chemistry student, University of Liverpool
+  GitHub: https://github.com/sgfdanie
+
+## Acknowledgements
+- We would like to thank Dr. Joe Forth for academic guidance during the span of this project.
+  Github: https://github.com/joeforth
+
