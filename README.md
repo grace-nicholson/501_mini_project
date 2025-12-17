@@ -44,6 +44,8 @@ This project is intended for students as an example of how sensors and microcont
 - MSc in Digital Chemistry student, University of Liverpool
 - GitHub: https://github.com/grace-nicholson
 
+---
+
 - Franciszek Daniewski 
 - MSc in Digital Chemistry student, University of Liverpool
 - GitHub: https://github.com/sgfdanie
