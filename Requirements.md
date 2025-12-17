@@ -12,10 +12,16 @@ Install the required Python packages using `pip`:
 
 ```bash
 pip install numpy pandas matplotlib paho-mqtt requests pyserial
-```bash
+```
+
+---
+
 
 ## Weather API
 Visit https://openweathermap.org/appid and create an account to fetch your API key from the website. This is going to be essential for the weather metadata code to work.
+
+---
+
 
 ## Other considerations
 
