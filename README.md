@@ -41,14 +41,14 @@ This project is intended for students as an example of how sensors and microcont
 ## Authors
 
 - Grace Nicholson 
-  MSc in Digital Chemistry student, University of Liverpool
-  GitHub: https://github.com/grace-nicholson
+- MSc in Digital Chemistry student, University of Liverpool
+- GitHub: https://github.com/grace-nicholson
 
 - Franciszek Daniewski 
-  MSc in Digital Chemistry student, University of Liverpool
-  GitHub: https://github.com/sgfdanie
+- MSc in Digital Chemistry student, University of Liverpool
+- GitHub: https://github.com/sgfdanie
 
 ## Acknowledgements
 - We would like to thank Dr. Joe Forth for academic guidance during the span of this project.
-  Github: https://github.com/joeforth
+- Github: https://github.com/joeforth
 
