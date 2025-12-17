@@ -34,6 +34,6 @@ This project is intended for students as an example of how sensors and microcont
 ## Installation
 
 1. Install the Arduino IDE and required board libraries.
-2. Install Python dependencies listed in `requirements.txt`.
+2. Install Python dependencies listed in `requirements`.
 3. Configure WiFi credentials and API keys where required.
 4. Configure file-paths where required.
